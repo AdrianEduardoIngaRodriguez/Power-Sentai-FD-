@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fondo, Imágenes y Comentarios Guardados</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background-color: #f9f9f9;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+        h1 {
+            color: #333;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+        }
+        .image-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        img {
+            max-width: 90%;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .comment-section {
+            width: 90%;
+            max-width: 800px;
+            margin-top: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .comment-section h2 {
+            margin-top: 0;
+        }
+        .comment-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .comment-list {
+            margin-top: 20px;
+        }
+        .comment {
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .nickname {
+            font-weight: bold;
+            color: #007BFF;
+        }
+        .disabled {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+        <h1>
+    TRANSFORMERS OVERDRIVE
+    Episodio 1 - Sobre La Marcha
+    </h1>
+    <label for="backgroundInput">Seleccionar fondo:</label>
+    <input type="file" id="backgroundInput" accept="image/*">
+    <label for="imageInput">Cargar imágenes:</label>
+    <input type="file" id="imageInput" multiple accept="image/*">
+    <div class="image-container" id="imageContainer"></div>
+    
+    <div class="comment-section">
+        <h2>Comentarios</h2>
+        <form class="comment-form" id="commentForm">
+            <input type="text" id="nickname" placeholder="Ingresa tu nickname" required>
+            <textarea id="commentText" placeholder="Escribe tu comentario aquí..." rows="4" required></textarea>
+            <button type="submit">Agregar comentario</button>
+        </form>
+        <div class="comment-list" id="commentList"></div>
+    </div>
+
+    <script>
+        const backgroundInput = document.getElementById('backgroundInput');
+        const imageInput = document.getElementById('imageInput');
+        const imageContainer = document.getElementById('imageContainer');
+        const commentForm = document.getElementById('commentForm');
+        const commentList = document.getElementById('commentList');
+
+        // Función para guardar datos en localStorage
+        function saveData(key, data) {
+            localStorage.setItem(key, JSON.stringify(data));
+        }
+
+        // Función para cargar datos desde localStorage
+        function loadData(key) {
+            return JSON.parse(localStorage.getItem(key)) || null;
+        }
+
+        // Establecer fondo desde localStorage
+        const savedBackground = loadData('background');
+        if (savedBackground) {
+            document.body.style.backgroundImage = `url(${savedBackground})`;
+            backgroundInput.classList.add('disabled');
+        }
+
+        // Mostrar imágenes desde localStorage
+        const savedImages = loadData('images');
+        if (savedImages) {
+            savedImages.forEach(src => {
+                const img = document.createElement('img');
+                img.src = src;
+                imageContainer.appendChild(img);
+            });
+            imageInput.classList.add('disabled');
+        }
+
+        // Mostrar comentarios desde localStorage
+        const savedComments = loadData('comments');
+        if (savedComments) {
+            savedComments.forEach(comment => {
+                const commentElement = document.createElement('div');
+                commentElement.className = 'comment';
+                commentElement.innerHTML = `
+                    <span class="nickname">${comment.nickname}</span>: 
+                    <p>${comment.text}</p>
+                `;
+                commentList.appendChild(commentElement);
+            });
+        }
+
+        // Guardar fondo y desactivar input
+        backgroundInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.body.style.backgroundImage = `url(${e.target.result})`;
+                    saveData('background', e.target.result);
+                    backgroundInput.classList.add('disabled');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Guardar imágenes y desactivar input
+        imageInput.addEventListener('change', function(event) {
+            const files = Array.from(event.target.files);
+            const imageSources = [];
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    imageContainer.appendChild(img);
+                    imageSources.push(e.target.result);
+                    saveData('images', imageSources);
+                };
+                reader.readAsDataURL(file);
+            });
+            imageInput.classList.add('disabled');
+        });
+
+        // Agregar comentarios y guardarlos
+        commentForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const nickname = document.getElementById('nickname').value.trim();
+            const commentText = document.getElementById('commentText').value.trim();
+
+            if (nickname && commentText) {
+                const comment = { nickname, text: commentText };
+                const commentElement = document.createElement('div');
+                commentElement.className = 'comment';
+                commentElement.innerHTML = `
+                    <span class="nickname">${nickname}</span>: 
+                    <p>${commentText}</p>
+                `;
+
+                commentList.appendChild(commentElement);
+
+                const currentComments = loadData('comments') || [];
+                currentComments.push(comment);
+                saveData('comments', currentComments);
+
+                commentForm.reset();
+            }
+        });
+    </script>
+</body>
+</html>
+
